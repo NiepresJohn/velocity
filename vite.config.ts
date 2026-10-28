@@ -1,13 +1,21 @@
 import { defineConfig } from 'vite'
-import tsConfigPaths from 'vite-tsconfig-paths'
+import { devtools } from '@tanstack/devtools-vite'
+
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 
-export default defineConfig({
-  server: {
-    port: 3000,
-  },
+import viteReact from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
+import { nitro } from 'nitro/vite'
+
+const config = defineConfig({
+  resolve: { tsconfigPaths: true },
   plugins: [
-    tsConfigPaths(),
+    devtools(),
+    nitro({ rollupConfig: { external: [/^@sentry\//] } }),
+    tailwindcss(),
     tanstackStart(),
+    viteReact(),
   ],
 })
+
+export default config

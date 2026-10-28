@@ -63,7 +63,7 @@ export const listIssuesSchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).default('asc'),
   page: z.number().int().min(1).default(1),
   pageSize: z.number().int().min(1).max(100).default(50),
-}).default({})
+})
 
 export const reorderBacklogSchema = z.object({
   ids: z.array(z.string().uuid()),
