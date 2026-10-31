@@ -31,10 +31,10 @@ import { Route as AppSettingsSecurityRouteImport } from './routes/app/settings/s
 import { Route as AppSettingsWorkspaceRouteImport } from './routes/app/settings/workspace'
 import { Route as AppProjectsProjectIdBacklogRouteImport } from './routes/app/projects/$projectId/backlog'
 import { Route as AppProjectsProjectIdBoardRouteImport } from './routes/app/projects/$projectId/board'
-import { Route as AppProjectsProjectIdSprintsRouteImport } from './routes/app/projects/$projectId/sprints'
 import { Route as AppProjectsProjectIdIssuesIssueIdRouteImport } from './routes/app/projects/$projectId/issues/$issueId'
-import { Route as AppProjectsProjectIdSprintsSprintIdRouteImport } from './routes/app/projects/$projectId/sprints/$sprintId'
+import { Route as AppProjectsProjectIdSprintsIndexRouteImport } from './routes/app/projects/$projectId/sprints/index'
 import { Route as AppProjectsProjectIdSprintsNewRouteImport } from './routes/app/projects/$projectId/sprints/new'
+import { Route as AppProjectsProjectIdSprintsSprintIdIndexRouteImport } from './routes/app/projects/$projectId/sprints/$sprintId/index'
 import { Route as AppProjectsProjectIdSprintsSprintIdReportRouteImport } from './routes/app/projects/$projectId/sprints/$sprintId/report'
 
 const IndexRoute = IndexRouteImport.update({
@@ -149,35 +149,35 @@ const AppProjectsProjectIdBoardRoute =
     path: '/projects/$projectId/board',
     getParentRoute: () => AppRouteRoute,
   } as any)
-const AppProjectsProjectIdSprintsRoute =
-  AppProjectsProjectIdSprintsRouteImport.update({
-    id: '/projects/$projectId/sprints',
-    path: '/projects/$projectId/sprints',
-    getParentRoute: () => AppRouteRoute,
-  } as any)
 const AppProjectsProjectIdIssuesIssueIdRoute =
   AppProjectsProjectIdIssuesIssueIdRouteImport.update({
     id: '/projects/$projectId/issues/$issueId',
     path: '/projects/$projectId/issues/$issueId',
     getParentRoute: () => AppRouteRoute,
   } as any)
-const AppProjectsProjectIdSprintsSprintIdRoute =
-  AppProjectsProjectIdSprintsSprintIdRouteImport.update({
-    id: '/$sprintId',
-    path: '/$sprintId',
-    getParentRoute: () => AppProjectsProjectIdSprintsRoute,
+const AppProjectsProjectIdSprintsIndexRoute =
+  AppProjectsProjectIdSprintsIndexRouteImport.update({
+    id: '/projects/$projectId/sprints/',
+    path: '/projects/$projectId/sprints/',
+    getParentRoute: () => AppRouteRoute,
   } as any)
 const AppProjectsProjectIdSprintsNewRoute =
   AppProjectsProjectIdSprintsNewRouteImport.update({
-    id: '/new',
-    path: '/new',
-    getParentRoute: () => AppProjectsProjectIdSprintsRoute,
+    id: '/projects/$projectId/sprints/new',
+    path: '/projects/$projectId/sprints/new',
+    getParentRoute: () => AppRouteRoute,
+  } as any)
+const AppProjectsProjectIdSprintsSprintIdIndexRoute =
+  AppProjectsProjectIdSprintsSprintIdIndexRouteImport.update({
+    id: '/projects/$projectId/sprints/$sprintId/',
+    path: '/projects/$projectId/sprints/$sprintId/',
+    getParentRoute: () => AppRouteRoute,
   } as any)
 const AppProjectsProjectIdSprintsSprintIdReportRoute =
   AppProjectsProjectIdSprintsSprintIdReportRouteImport.update({
-    id: '/report',
-    path: '/report',
-    getParentRoute: () => AppProjectsProjectIdSprintsSprintIdRoute,
+    id: '/projects/$projectId/sprints/$sprintId/report',
+    path: '/projects/$projectId/sprints/$sprintId/report',
+    getParentRoute: () => AppRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -203,11 +203,11 @@ export interface FileRoutesByFullPath {
   '/app/projects/': typeof AppProjectsIndexRoute
   '/app/projects/$projectId/backlog': typeof AppProjectsProjectIdBacklogRoute
   '/app/projects/$projectId/board': typeof AppProjectsProjectIdBoardRoute
-  '/app/projects/$projectId/sprints': typeof AppProjectsProjectIdSprintsRouteWithChildren
   '/app/projects/$projectId/issues/$issueId': typeof AppProjectsProjectIdIssuesIssueIdRoute
-  '/app/projects/$projectId/sprints/$sprintId': typeof AppProjectsProjectIdSprintsSprintIdRouteWithChildren
   '/app/projects/$projectId/sprints/new': typeof AppProjectsProjectIdSprintsNewRoute
+  '/app/projects/$projectId/sprints/': typeof AppProjectsProjectIdSprintsIndexRoute
   '/app/projects/$projectId/sprints/$sprintId/report': typeof AppProjectsProjectIdSprintsSprintIdReportRoute
+  '/app/projects/$projectId/sprints/$sprintId/': typeof AppProjectsProjectIdSprintsSprintIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -231,11 +231,11 @@ export interface FileRoutesByTo {
   '/app/projects': typeof AppProjectsIndexRoute
   '/app/projects/$projectId/backlog': typeof AppProjectsProjectIdBacklogRoute
   '/app/projects/$projectId/board': typeof AppProjectsProjectIdBoardRoute
-  '/app/projects/$projectId/sprints': typeof AppProjectsProjectIdSprintsRouteWithChildren
   '/app/projects/$projectId/issues/$issueId': typeof AppProjectsProjectIdIssuesIssueIdRoute
-  '/app/projects/$projectId/sprints/$sprintId': typeof AppProjectsProjectIdSprintsSprintIdRouteWithChildren
   '/app/projects/$projectId/sprints/new': typeof AppProjectsProjectIdSprintsNewRoute
+  '/app/projects/$projectId/sprints': typeof AppProjectsProjectIdSprintsIndexRoute
   '/app/projects/$projectId/sprints/$sprintId/report': typeof AppProjectsProjectIdSprintsSprintIdReportRoute
+  '/app/projects/$projectId/sprints/$sprintId': typeof AppProjectsProjectIdSprintsSprintIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -261,11 +261,11 @@ export interface FileRoutesById {
   '/app/projects/': typeof AppProjectsIndexRoute
   '/app/projects/$projectId/backlog': typeof AppProjectsProjectIdBacklogRoute
   '/app/projects/$projectId/board': typeof AppProjectsProjectIdBoardRoute
-  '/app/projects/$projectId/sprints': typeof AppProjectsProjectIdSprintsRouteWithChildren
   '/app/projects/$projectId/issues/$issueId': typeof AppProjectsProjectIdIssuesIssueIdRoute
-  '/app/projects/$projectId/sprints/$sprintId': typeof AppProjectsProjectIdSprintsSprintIdRouteWithChildren
   '/app/projects/$projectId/sprints/new': typeof AppProjectsProjectIdSprintsNewRoute
+  '/app/projects/$projectId/sprints/': typeof AppProjectsProjectIdSprintsIndexRoute
   '/app/projects/$projectId/sprints/$sprintId/report': typeof AppProjectsProjectIdSprintsSprintIdReportRoute
+  '/app/projects/$projectId/sprints/$sprintId/': typeof AppProjectsProjectIdSprintsSprintIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -292,11 +292,11 @@ export interface FileRouteTypes {
     | '/app/projects/'
     | '/app/projects/$projectId/backlog'
     | '/app/projects/$projectId/board'
-    | '/app/projects/$projectId/sprints'
     | '/app/projects/$projectId/issues/$issueId'
-    | '/app/projects/$projectId/sprints/$sprintId'
     | '/app/projects/$projectId/sprints/new'
+    | '/app/projects/$projectId/sprints/'
     | '/app/projects/$projectId/sprints/$sprintId/report'
+    | '/app/projects/$projectId/sprints/$sprintId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -320,11 +320,11 @@ export interface FileRouteTypes {
     | '/app/projects'
     | '/app/projects/$projectId/backlog'
     | '/app/projects/$projectId/board'
-    | '/app/projects/$projectId/sprints'
     | '/app/projects/$projectId/issues/$issueId'
-    | '/app/projects/$projectId/sprints/$sprintId'
     | '/app/projects/$projectId/sprints/new'
+    | '/app/projects/$projectId/sprints'
     | '/app/projects/$projectId/sprints/$sprintId/report'
+    | '/app/projects/$projectId/sprints/$sprintId'
   id:
     | '__root__'
     | '/'
@@ -349,11 +349,11 @@ export interface FileRouteTypes {
     | '/app/projects/'
     | '/app/projects/$projectId/backlog'
     | '/app/projects/$projectId/board'
-    | '/app/projects/$projectId/sprints'
     | '/app/projects/$projectId/issues/$issueId'
-    | '/app/projects/$projectId/sprints/$sprintId'
     | '/app/projects/$projectId/sprints/new'
+    | '/app/projects/$projectId/sprints/'
     | '/app/projects/$projectId/sprints/$sprintId/report'
+    | '/app/projects/$projectId/sprints/$sprintId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -524,13 +524,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProjectsProjectIdBoardRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    '/app/projects/$projectId/sprints': {
-      id: '/app/projects/$projectId/sprints'
-      path: '/projects/$projectId/sprints'
-      fullPath: '/app/projects/$projectId/sprints'
-      preLoaderRoute: typeof AppProjectsProjectIdSprintsRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
     '/app/projects/$projectId/issues/$issueId': {
       id: '/app/projects/$projectId/issues/$issueId'
       path: '/projects/$projectId/issues/$issueId'
@@ -538,61 +531,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProjectsProjectIdIssuesIssueIdRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    '/app/projects/$projectId/sprints/$sprintId': {
-      id: '/app/projects/$projectId/sprints/$sprintId'
-      path: '/$sprintId'
-      fullPath: '/app/projects/$projectId/sprints/$sprintId'
-      preLoaderRoute: typeof AppProjectsProjectIdSprintsSprintIdRouteImport
-      parentRoute: typeof AppProjectsProjectIdSprintsRoute
+    '/app/projects/$projectId/sprints/': {
+      id: '/app/projects/$projectId/sprints/'
+      path: '/projects/$projectId/sprints'
+      fullPath: '/app/projects/$projectId/sprints/'
+      preLoaderRoute: typeof AppProjectsProjectIdSprintsIndexRouteImport
+      parentRoute: typeof AppRouteRoute
     }
     '/app/projects/$projectId/sprints/new': {
       id: '/app/projects/$projectId/sprints/new'
-      path: '/new'
+      path: '/projects/$projectId/sprints/new'
       fullPath: '/app/projects/$projectId/sprints/new'
       preLoaderRoute: typeof AppProjectsProjectIdSprintsNewRouteImport
-      parentRoute: typeof AppProjectsProjectIdSprintsRoute
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/projects/$projectId/sprints/$sprintId/': {
+      id: '/app/projects/$projectId/sprints/$sprintId/'
+      path: '/projects/$projectId/sprints/$sprintId'
+      fullPath: '/app/projects/$projectId/sprints/$sprintId/'
+      preLoaderRoute: typeof AppProjectsProjectIdSprintsSprintIdIndexRouteImport
+      parentRoute: typeof AppRouteRoute
     }
     '/app/projects/$projectId/sprints/$sprintId/report': {
       id: '/app/projects/$projectId/sprints/$sprintId/report'
-      path: '/report'
+      path: '/projects/$projectId/sprints/$sprintId/report'
       fullPath: '/app/projects/$projectId/sprints/$sprintId/report'
       preLoaderRoute: typeof AppProjectsProjectIdSprintsSprintIdReportRouteImport
-      parentRoute: typeof AppProjectsProjectIdSprintsSprintIdRoute
+      parentRoute: typeof AppRouteRoute
     }
   }
 }
-
-interface AppProjectsProjectIdSprintsSprintIdRouteChildren {
-  AppProjectsProjectIdSprintsSprintIdReportRoute: typeof AppProjectsProjectIdSprintsSprintIdReportRoute
-}
-
-const AppProjectsProjectIdSprintsSprintIdRouteChildren: AppProjectsProjectIdSprintsSprintIdRouteChildren =
-  {
-    AppProjectsProjectIdSprintsSprintIdReportRoute:
-      AppProjectsProjectIdSprintsSprintIdReportRoute,
-  }
-
-const AppProjectsProjectIdSprintsSprintIdRouteWithChildren =
-  AppProjectsProjectIdSprintsSprintIdRoute._addFileChildren(
-    AppProjectsProjectIdSprintsSprintIdRouteChildren,
-  )
-
-interface AppProjectsProjectIdSprintsRouteChildren {
-  AppProjectsProjectIdSprintsSprintIdRoute: typeof AppProjectsProjectIdSprintsSprintIdRouteWithChildren
-  AppProjectsProjectIdSprintsNewRoute: typeof AppProjectsProjectIdSprintsNewRoute
-}
-
-const AppProjectsProjectIdSprintsRouteChildren: AppProjectsProjectIdSprintsRouteChildren =
-  {
-    AppProjectsProjectIdSprintsSprintIdRoute:
-      AppProjectsProjectIdSprintsSprintIdRouteWithChildren,
-    AppProjectsProjectIdSprintsNewRoute: AppProjectsProjectIdSprintsNewRoute,
-  }
-
-const AppProjectsProjectIdSprintsRouteWithChildren =
-  AppProjectsProjectIdSprintsRoute._addFileChildren(
-    AppProjectsProjectIdSprintsRouteChildren,
-  )
 
 interface AppRouteRouteChildren {
   AppMyWorkRoute: typeof AppMyWorkRoute
@@ -608,8 +576,11 @@ interface AppRouteRouteChildren {
   AppProjectsIndexRoute: typeof AppProjectsIndexRoute
   AppProjectsProjectIdBacklogRoute: typeof AppProjectsProjectIdBacklogRoute
   AppProjectsProjectIdBoardRoute: typeof AppProjectsProjectIdBoardRoute
-  AppProjectsProjectIdSprintsRoute: typeof AppProjectsProjectIdSprintsRouteWithChildren
   AppProjectsProjectIdIssuesIssueIdRoute: typeof AppProjectsProjectIdIssuesIssueIdRoute
+  AppProjectsProjectIdSprintsNewRoute: typeof AppProjectsProjectIdSprintsNewRoute
+  AppProjectsProjectIdSprintsIndexRoute: typeof AppProjectsProjectIdSprintsIndexRoute
+  AppProjectsProjectIdSprintsSprintIdReportRoute: typeof AppProjectsProjectIdSprintsSprintIdReportRoute
+  AppProjectsProjectIdSprintsSprintIdIndexRoute: typeof AppProjectsProjectIdSprintsSprintIdIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
@@ -626,10 +597,14 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppProjectsIndexRoute: AppProjectsIndexRoute,
   AppProjectsProjectIdBacklogRoute: AppProjectsProjectIdBacklogRoute,
   AppProjectsProjectIdBoardRoute: AppProjectsProjectIdBoardRoute,
-  AppProjectsProjectIdSprintsRoute:
-    AppProjectsProjectIdSprintsRouteWithChildren,
   AppProjectsProjectIdIssuesIssueIdRoute:
     AppProjectsProjectIdIssuesIssueIdRoute,
+  AppProjectsProjectIdSprintsNewRoute: AppProjectsProjectIdSprintsNewRoute,
+  AppProjectsProjectIdSprintsIndexRoute: AppProjectsProjectIdSprintsIndexRoute,
+  AppProjectsProjectIdSprintsSprintIdReportRoute:
+    AppProjectsProjectIdSprintsSprintIdReportRoute,
+  AppProjectsProjectIdSprintsSprintIdIndexRoute:
+    AppProjectsProjectIdSprintsSprintIdIndexRoute,
 }
 
 const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(

@@ -220,14 +220,20 @@ export const addComment = createServerFn({ method: 'POST' })
 export const editComment = createServerFn({ method: 'POST' })
   .validator(z.object({ commentId: z.string().uuid(), body: z.string().min(1).max(5000) }))
   .handler(async ({ data }) => {
-    await db.update(issueCommentsTable).set({ body: data.body, updatedAt: new Date() }).where(eq(issueCommentsTable.id, data.commentId))
+    const { userId } = await requireSession()
+    const res = await db.update(issueCommentsTable).set({ body: data.body, updatedAt: new Date() })
+      .where(and(eq(issueCommentsTable.id, data.commentId), eq(issueCommentsTable.authorId, userId), isNull(issueCommentsTable.deletedAt))).returning({ id: issueCommentsTable.id })
+    if (!res.length) throw new NotFoundError('Comment not found.')
     return { ok: true }
   })
 
 export const deleteComment = createServerFn({ method: 'POST' })
   .validator(z.object({ commentId: z.string().uuid() }))
   .handler(async ({ data }) => {
-    await db.update(issueCommentsTable).set({ deletedAt: new Date() }).where(eq(issueCommentsTable.id, data.commentId))
+    const { userId } = await requireSession()
+    const res = await db.update(issueCommentsTable).set({ deletedAt: new Date() })
+      .where(and(eq(issueCommentsTable.id, data.commentId), eq(issueCommentsTable.authorId, userId))).returning({ id: issueCommentsTable.id })
+    if (!res.length) throw new NotFoundError('Comment not found.')
     return { ok: true }
   })
 

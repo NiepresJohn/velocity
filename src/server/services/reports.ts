@@ -17,7 +17,7 @@ export const getSprintReport = createServerFn({ method: 'GET' })
     // Committed issues at start (snapshots)
     const commitments = await db.select({ id: snapshotsTable.issueId, points: snapshotsTable.estimatePoints }).from(snapshotsTable).where(and(eq(snapshotsTable.sprintId, data.sprintId), eq(snapshotsTable.eventType, 'commitment'))).orderBy(asc(snapshotsTable.createdAt))
     const completedIssues = await db.select({ id: issues.id, estimatePoints: issues.estimatePoints, status: issues.status, number: issues.number }).from(issues)
-      .where(and(eq(issues.sprintId, data.sprintId), eq(issues.completedAt, null as any)))
+      .where(eq(issues.sprintId, data.sprintId))
     // Count completed by final status
     const totalCommitted = commitments.length
     const totalCommittedPoints = commitments.reduce((s, c) => s + (c.points ?? 0), 0)
@@ -60,26 +60,20 @@ export const getBurndown = createServerFn({ method: 'GET' })
     if (!await getMembership(userId, data.workspaceId)) throw new UnauthorizedError()
     const [sprint] = await db.select().from(sprints).where(and(eq(sprints.id, data.sprintId), eq(sprints.workspaceId, data.workspaceId))).limit(1)
     if (!sprint) throw new NotFoundError('Sprint not found.')
-    // Generate burndown data points: total remaining work per day
-    const commits = await db.select({ points: snapshotsTable.estimatePoints }).from(snapshotsTable).where(and(eq(snapshotsTable.sprintId, data.sprintId), eq(snapshotsTable.eventType, 'commitment')))
-    let totalRemaining = commits.reduce((s, c) => s + (c.points ?? 0), 0)
-    const dailyData: { date: string; ideal: number; actual: number }[] = []
+    // Remaining points per day = points in sprint minus points completed on or before that day (no future days for actual).
+    const rows = await db.select({ points: issues.estimatePoints, completedAt: issues.completedAt }).from(issues).where(eq(issues.sprintId, data.sprintId))
+    const total = rows.reduce((t, r) => t + (r.points ?? 0), 0)
+    const dailyData: { date: string; ideal: number; actual: number | null }[] = []
     if (sprint.startDate && sprint.endDate) {
       const start = new Date(sprint.startDate)
       const end = new Date(sprint.endDate)
-      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const span = Math.max(1, end.getTime() - start.getTime())
+      const today = new Date().toISOString().slice(0, 10)
+      for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
         const iso = d.toISOString().slice(0, 10)
-        const ideal = totalRemaining * (1 - (d.getTime() - start.getTime()) / (end.getTime() - start.getTime()))
-        dailyData.push({ date: iso, ideal: Math.max(0, Math.round(ideal)), actual: Math.max(0, totalRemaining) })
-        // Check for events that changed this day's remaining
-        const dayEvents = await db.select({ eventType: snapshotsTable.eventType, estimatePoints: snapshotsTable.estimatePoints }).from(snapshotsTable)
-          .where(eq(snapshotsTable.sprintId, data.sprintId))
-          .orderBy(desc(snapshotsTable.createdAt))
-          .limit(10)
-        for (const e of dayEvents) {
-          if (e.eventType === 'incomplete_snapshot') totalRemaining -= (e.estimatePoints ?? 0)
-          else if (e.eventType === 'scope_change_in') totalRemaining += (e.estimatePoints ?? 0)
-        }
+        const ideal = Math.round(total * (1 - (d.getTime() - start.getTime()) / span))
+        const done = rows.filter((r) => r.completedAt && r.completedAt.toISOString().slice(0, 10) <= iso).reduce((t, r) => t + (r.points ?? 0), 0)
+        dailyData.push({ date: iso, ideal, actual: iso > today ? null : total - done })
       }
     }
     return dailyData
