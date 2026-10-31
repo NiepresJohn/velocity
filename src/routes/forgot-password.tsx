@@ -1,27 +1,34 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { requestPasswordReset } from '#/server/auth/functions'
 import { useState } from 'react'
+import { requestPasswordReset } from '#/server/auth/functions'
+import { Alert, AuthCard, Field, SubmitButton, errorMessage } from '#/components/auth-ui'
 
 export const Route = createFileRoute('/forgot-password')({ component: ForgotPasswordPage })
 
 function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
+  const [error, setError] = useState('')
+  const [pending, setPending] = useState(false)
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(''); setPending(true)
+    try { await requestPasswordReset({ data: { email } }); setSent(true) }
+    catch (err) { setError(errorMessage(err, 'Could not send the reset link. Please try again.')) }
+    setPending(false)
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <form onSubmit={async e => { e.preventDefault(); await requestPasswordReset({ data: { email } }); setSent(true); }} className="w-full max-w-md p-8 space-y-6 bg-white rounded shadow">
-        <h1 className="text-2xl font-bold text-center">Forgot Password</h1>
-        {sent ? (
-          <p className="text-green-600 text-center">If an account exists, a reset link has been sent.</p>
-        ) : (
-          <>
-            <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" required type="email" className="w-full px-4 py-2 border rounded" />
-            <button type="submit" className="w-full py-2 text-white bg-indigo-600 rounded hover:bg-indigo-700">Send Reset Link</button>
-            <p className="text-center"><a href="/login" className="text-indigo-600 underline">Back to Login</a></p>
-          </>
-        )}
-      </form>
-    </div>
+    <AuthCard title="Reset your password" subtitle="We will email you a link to choose a new one.">
+      {sent ? <Alert kind="success">If an account exists for that email, a reset link is on its way. It expires in 1 hour.</Alert> : (
+        <form onSubmit={onSubmit} className="space-y-4">
+          {error && <Alert>{error}</Alert>}
+          <Field label="Email" id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={pending} />
+          <SubmitButton pending={pending} pendingText="Sending...">Send reset link</SubmitButton>
+        </form>
+      )}
+      <p className="mt-4 text-sm"><a href="/login" className="text-jira hover:underline">Back to log in</a></p>
+    </AuthCard>
   )
 }

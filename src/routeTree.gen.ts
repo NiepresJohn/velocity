@@ -21,6 +21,7 @@ import { Route as UnauthorizedRouteImport } from './routes/unauthorized'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppMyWorkRouteImport } from './routes/app/my-work'
 import { Route as AppNotificationsRouteImport } from './routes/app/notifications'
+import { Route as AppSettingsRouteRouteImport } from './routes/app/settings/route'
 import { Route as AppTeamRouteImport } from './routes/app/team'
 import { Route as InviteTokenRouteImport } from './routes/invite/$token'
 import { Route as AppProjectsIndexRouteImport } from './routes/app/projects/index'
@@ -98,6 +99,11 @@ const AppNotificationsRoute = AppNotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppSettingsRouteRoute = AppSettingsRouteRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppTeamRoute = AppTeamRouteImport.update({
   id: '/team',
   path: '/team',
@@ -119,29 +125,29 @@ const AppProjectsNewRoute = AppProjectsNewRouteImport.update({
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppSettingsMembersRoute = AppSettingsMembersRouteImport.update({
-  id: '/settings/members',
-  path: '/settings/members',
-  getParentRoute: () => AppRouteRoute,
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => AppSettingsRouteRoute,
 } as any)
 const AppSettingsPreferencesRoute = AppSettingsPreferencesRouteImport.update({
-  id: '/settings/preferences',
-  path: '/settings/preferences',
-  getParentRoute: () => AppRouteRoute,
+  id: '/preferences',
+  path: '/preferences',
+  getParentRoute: () => AppSettingsRouteRoute,
 } as any)
 const AppSettingsProfileRoute = AppSettingsProfileRouteImport.update({
-  id: '/settings/profile',
-  path: '/settings/profile',
-  getParentRoute: () => AppRouteRoute,
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AppSettingsRouteRoute,
 } as any)
 const AppSettingsSecurityRoute = AppSettingsSecurityRouteImport.update({
-  id: '/settings/security',
-  path: '/settings/security',
-  getParentRoute: () => AppRouteRoute,
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => AppSettingsRouteRoute,
 } as any)
 const AppSettingsWorkspaceRoute = AppSettingsWorkspaceRouteImport.update({
-  id: '/settings/workspace',
-  path: '/settings/workspace',
-  getParentRoute: () => AppRouteRoute,
+  id: '/workspace',
+  path: '/workspace',
+  getParentRoute: () => AppSettingsRouteRoute,
 } as any)
 const AppProjectsProjectIdBacklogRoute =
   AppProjectsProjectIdBacklogRouteImport.update({
@@ -196,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/unauthorized': typeof UnauthorizedRoute
+  '/app/settings': typeof AppSettingsRouteRouteWithChildren
   '/app/my-work': typeof AppMyWorkRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/team': typeof AppTeamRoute
@@ -225,6 +232,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/unauthorized': typeof UnauthorizedRoute
+  '/app/settings': typeof AppSettingsRouteRouteWithChildren
   '/app/my-work': typeof AppMyWorkRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/team': typeof AppTeamRoute
@@ -256,6 +264,7 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/unauthorized': typeof UnauthorizedRoute
+  '/app/settings': typeof AppSettingsRouteRouteWithChildren
   '/app/my-work': typeof AppMyWorkRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/team': typeof AppTeamRoute
@@ -288,6 +297,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/unauthorized'
+    | '/app/settings'
     | '/app/my-work'
     | '/app/notifications'
     | '/app/team'
@@ -317,6 +327,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/unauthorized'
+    | '/app/settings'
     | '/app/my-work'
     | '/app/notifications'
     | '/app/team'
@@ -347,6 +358,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/unauthorized'
+    | '/app/settings'
     | '/app/my-work'
     | '/app/notifications'
     | '/app/team'
@@ -467,6 +479,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNotificationsRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/app/settings': {
+      id: '/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AppSettingsRouteRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/app/team': {
       id: '/app/team'
       path: '/team'
@@ -497,38 +516,38 @@ declare module '@tanstack/react-router' {
     }
     '/app/settings/members': {
       id: '/app/settings/members'
-      path: '/settings/members'
+      path: '/members'
       fullPath: '/app/settings/members'
       preLoaderRoute: typeof AppSettingsMembersRouteImport
-      parentRoute: typeof AppRouteRoute
+      parentRoute: typeof AppSettingsRouteRoute
     }
     '/app/settings/preferences': {
       id: '/app/settings/preferences'
-      path: '/settings/preferences'
+      path: '/preferences'
       fullPath: '/app/settings/preferences'
       preLoaderRoute: typeof AppSettingsPreferencesRouteImport
-      parentRoute: typeof AppRouteRoute
+      parentRoute: typeof AppSettingsRouteRoute
     }
     '/app/settings/profile': {
       id: '/app/settings/profile'
-      path: '/settings/profile'
+      path: '/profile'
       fullPath: '/app/settings/profile'
       preLoaderRoute: typeof AppSettingsProfileRouteImport
-      parentRoute: typeof AppRouteRoute
+      parentRoute: typeof AppSettingsRouteRoute
     }
     '/app/settings/security': {
       id: '/app/settings/security'
-      path: '/settings/security'
+      path: '/security'
       fullPath: '/app/settings/security'
       preLoaderRoute: typeof AppSettingsSecurityRouteImport
-      parentRoute: typeof AppRouteRoute
+      parentRoute: typeof AppSettingsRouteRoute
     }
     '/app/settings/workspace': {
       id: '/app/settings/workspace'
-      path: '/settings/workspace'
+      path: '/workspace'
       fullPath: '/app/settings/workspace'
       preLoaderRoute: typeof AppSettingsWorkspaceRouteImport
-      parentRoute: typeof AppRouteRoute
+      parentRoute: typeof AppSettingsRouteRoute
     }
     '/app/projects/$projectId/backlog': {
       id: '/app/projects/$projectId/backlog'
@@ -582,17 +601,32 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AppRouteRouteChildren {
-  AppMyWorkRoute: typeof AppMyWorkRoute
-  AppNotificationsRoute: typeof AppNotificationsRoute
-  AppTeamRoute: typeof AppTeamRoute
-  AppIndexRoute: typeof AppIndexRoute
-  AppProjectsNewRoute: typeof AppProjectsNewRoute
+interface AppSettingsRouteRouteChildren {
   AppSettingsMembersRoute: typeof AppSettingsMembersRoute
   AppSettingsPreferencesRoute: typeof AppSettingsPreferencesRoute
   AppSettingsProfileRoute: typeof AppSettingsProfileRoute
   AppSettingsSecurityRoute: typeof AppSettingsSecurityRoute
   AppSettingsWorkspaceRoute: typeof AppSettingsWorkspaceRoute
+}
+
+const AppSettingsRouteRouteChildren: AppSettingsRouteRouteChildren = {
+  AppSettingsMembersRoute: AppSettingsMembersRoute,
+  AppSettingsPreferencesRoute: AppSettingsPreferencesRoute,
+  AppSettingsProfileRoute: AppSettingsProfileRoute,
+  AppSettingsSecurityRoute: AppSettingsSecurityRoute,
+  AppSettingsWorkspaceRoute: AppSettingsWorkspaceRoute,
+}
+
+const AppSettingsRouteRouteWithChildren =
+  AppSettingsRouteRoute._addFileChildren(AppSettingsRouteRouteChildren)
+
+interface AppRouteRouteChildren {
+  AppSettingsRouteRoute: typeof AppSettingsRouteRouteWithChildren
+  AppMyWorkRoute: typeof AppMyWorkRoute
+  AppNotificationsRoute: typeof AppNotificationsRoute
+  AppTeamRoute: typeof AppTeamRoute
+  AppIndexRoute: typeof AppIndexRoute
+  AppProjectsNewRoute: typeof AppProjectsNewRoute
   AppProjectsIndexRoute: typeof AppProjectsIndexRoute
   AppProjectsProjectIdBacklogRoute: typeof AppProjectsProjectIdBacklogRoute
   AppProjectsProjectIdBoardRoute: typeof AppProjectsProjectIdBoardRoute
@@ -604,16 +638,12 @@ interface AppRouteRouteChildren {
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
+  AppSettingsRouteRoute: AppSettingsRouteRouteWithChildren,
   AppMyWorkRoute: AppMyWorkRoute,
   AppNotificationsRoute: AppNotificationsRoute,
   AppTeamRoute: AppTeamRoute,
   AppIndexRoute: AppIndexRoute,
   AppProjectsNewRoute: AppProjectsNewRoute,
-  AppSettingsMembersRoute: AppSettingsMembersRoute,
-  AppSettingsPreferencesRoute: AppSettingsPreferencesRoute,
-  AppSettingsProfileRoute: AppSettingsProfileRoute,
-  AppSettingsSecurityRoute: AppSettingsSecurityRoute,
-  AppSettingsWorkspaceRoute: AppSettingsWorkspaceRoute,
   AppProjectsIndexRoute: AppProjectsIndexRoute,
   AppProjectsProjectIdBacklogRoute: AppProjectsProjectIdBacklogRoute,
   AppProjectsProjectIdBoardRoute: AppProjectsProjectIdBoardRoute,

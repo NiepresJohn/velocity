@@ -3,4 +3,7 @@ node_modules
 dist
 .nitro
 .tanstack
+.env
+.env.production
 *.log
+.playwright-mcp

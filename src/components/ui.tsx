@@ -37,3 +37,19 @@ const STATUS: Record<string, string> = {
 export function StatusLozenge({ status }: { status: string }) {
   return <span className={cn('inline-block rounded-sm px-1.5 py-0.5 text-[11px] font-bold uppercase', STATUS[status] ?? STATUS.todo)}>{status.replace('_', ' ')}</span>
 }
+
+export function LabelChip({ label, onRemove }: { label: { name: string; color?: string | null }; onRemove?: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-sm px-1.5 text-[11px] font-medium text-white" style={{ background: label.color ?? '#6366f1' }}>
+      {label.name}
+      {onRemove && <button type="button" aria-label={`Remove label ${label.name}`} onClick={onRemove} className="leading-none hover:opacity-70">×</button>}
+    </span>
+  )
+}
+
+export const STATUS_OPTIONS = [
+  { key: 'todo', label: 'To Do' }, { key: 'in_progress', label: 'In Progress' }, { key: 'in_review', label: 'In Review' }, { key: 'done', label: 'Done' },
+]
+export const TYPE_OPTIONS = ['story', 'task', 'bug', 'epic']
+export const PRIORITY_OPTIONS = ['lowest', 'low', 'medium', 'high', 'highest']
+export type Member = { id: string; name: string; email: string; role: string }

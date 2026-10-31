@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { db } from '../db'
 import { users, workspaces, workspaceMembers, passwordResetTokens, sessions as sessionsTable } from '../db/schema'
-import { eq, and, gt } from 'drizzle-orm'
+import { eq, and, gt, isNull } from 'drizzle-orm'
 import { hashPassword, verifyPassword } from './password'
 import { createSession, deleteSession, getSession, SESSION_COOKIE, WORKSPACE_COOKIE, hashToken, randomBytesHex } from './session'
 import { env, isProduction, isDev } from '#/lib/env'
@@ -10,6 +10,7 @@ import { UnauthenticatedError, NotFoundError, ValidationError, RateLimitedError 
 import { normalizeEmail, normalizeName, slugify } from '#/lib/utils'
 import { requireSession } from './guard'
 import { rateLimiter } from '../security/rate-limit'
+import { emailAdapter } from '../email'
 import { logger } from '#/lib/logger'
 // lazy so the server-only module never lands in the client graph
 const getCookie = async (n: string) => (await import('@tanstack/react-start/server')).getCookie(n)
@@ -20,10 +21,13 @@ const registerSchema = z.object({ name: z.string().trim().min(2).max(80), email:
 const loginSchema = z.object({ email: z.string().transform(normalizeEmail).pipe(z.string().email()), password: z.string().min(1) })
 
 export const register = createServerFn({ method: 'POST' }).validator(registerSchema).handler(async ({ data }) => {
-  if (rateLimiter.isLimited('register', data.email)) throw new RateLimitedError()
-  rateLimiter.hit('register', data.email)
+  if (await rateLimiter.isLimited('register', data.email)) throw new RateLimitedError()
+  await rateLimiter.hit('register', data.email)
   const existing = await db.select().from(users).where(eq(users.email, data.email))
-  if (existing.length > 0) return { ok: true as const, requiresLogin: true }
+  if (existing.length > 0) {
+    await hashPassword(data.password) // keep timing close to the new-account path
+    return { ok: true as const }
+  }
   const passwordHash = await hashPassword(data.password)
   const [user] = await db.insert(users).values({ email: data.email, name: normalizeName(data.name), passwordHash }).returning()
   const slug = slugify(data.name) + '-' + randomBytesHex(2)
@@ -33,12 +37,12 @@ export const register = createServerFn({ method: 'POST' }).validator(registerSch
   await setCookie(SESSION_COOKIE, token, cookieOptions())
   await setCookie(WORKSPACE_COOKIE, workspace.id, workspaceCookieOptions())
   logger.info('user.registered', { userId: user.id, workspaceId: workspace.id })
-  return { ok: true as const, user: { id: user.id, email: user.email, name: user.name }, workspaceId: workspace.id }
+  return { ok: true as const }
 })
 
 export const login = createServerFn({ method: 'POST' }).validator(loginSchema).handler(async ({ data }) => {
-  if (rateLimiter.isLimited('login', data.email)) throw new RateLimitedError()
-  rateLimiter.hit('login', data.email)
+  if (await rateLimiter.isLimited('login', data.email)) throw new RateLimitedError()
+  await rateLimiter.hit('login', data.email)
   const rows = await db.select().from(users).where(eq(users.email, data.email))
   const user = rows[0]
   if (!user || user.disabledAt) return { ok: false as const, error: 'Invalid email or password.' }
@@ -64,24 +68,28 @@ export const getCurrentSession = createServerFn({ method: 'GET' }).handler(async
 })
 
 export const requestPasswordReset = createServerFn({ method: 'POST' }).validator(z.object({ email: z.string().transform(normalizeEmail).pipe(z.string().email()) })).handler(async ({ data }) => {
-  if (rateLimiter.isLimited('reset-request', data.email)) throw new RateLimitedError()
-  rateLimiter.hit('reset-request', data.email)
+  if (await rateLimiter.isLimited('reset-request', data.email)) throw new RateLimitedError()
+  await rateLimiter.hit('reset-request', data.email)
   const rows = await db.select().from(users).where(eq(users.email, data.email))
   const user = rows[0]
   if (user && !user.disabledAt) {
     const token = randomBytesHex(32)
     const tokenHash = await hashToken(token)
     await db.insert(passwordResetTokens).values({ userId: user.id, tokenHash, expiresAt: new Date(Date.now() + 60*60*1000) })
-    if (isDev) logger.info('password.reset-link', { email: data.email, link: `${env.APP_URL}/reset-password?token=${token}` })
+    // fire-and-forget so response time does not reveal whether the account exists
+    void emailAdapter.sendPasswordReset(data.email, `${env.APP_URL}/reset-password?token=${token}`)
+      .catch((err) => logger.error('email.reset_failed', { message: err instanceof Error ? err.message : 'unknown' }))
   }
   return { ok: true }
 })
 
 export const resetPassword = createServerFn({ method: 'POST' }).validator(z.object({ token: z.string(), password: z.string().min(8).max(128) })).handler(async ({ data }) => {
   const tokenHash = await hashToken(data.token)
+  if (await rateLimiter.isLimited('reset', tokenHash)) throw new RateLimitedError()
+  await rateLimiter.hit('reset', tokenHash)
   const rows = await db.select({ token: passwordResetTokens, user: users }).from(passwordResetTokens)
     .innerJoin(users, eq(users.id, passwordResetTokens.userId))
-    .where(and(eq(passwordResetTokens.tokenHash, tokenHash), gt(passwordResetTokens.expiresAt, new Date())))
+    .where(and(eq(passwordResetTokens.tokenHash, tokenHash), gt(passwordResetTokens.expiresAt, new Date()), isNull(passwordResetTokens.usedAt)))
   const row = rows[0]
   if (!row) throw new NotFoundError('Invalid or expired reset link.')
   const passwordHash = await hashPassword(data.password)

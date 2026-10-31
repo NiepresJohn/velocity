@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { getCurrentSession, logout } from '#/server/auth/functions'
 import { getAppContext } from '#/server/services/workspaces'
 import { Avatar } from '#/components/ui'
+import { GlobalSearch } from '#/components/GlobalSearch'
+import { CreateIssueModal } from '#/components/CreateIssueModal'
 
 export const Route = createFileRoute('/app')({
   beforeLoad: async () => {
@@ -19,7 +21,8 @@ const sideLink = 'flex items-center gap-2 px-3 py-2 text-sm rounded-sm text-ink 
 const sideActive = { className: 'bg-[#deebff] text-jira font-medium' }
 
 function AppLayout() {
-  const { user, projects, workspaceName } = Route.useRouteContext()
+  const { user, projects, workspaceName, workspaceId } = Route.useRouteContext()
+  const [creating, setCreating] = useState(false)
   const { projectId } = useParams({ strict: false }) as { projectId?: string }
   const [menu, setMenu] = useState<'projects' | 'user' | null>(null)
   const project = projects.find((p) => p.id === projectId)
@@ -41,9 +44,11 @@ function AppLayout() {
           )}
         </div>
         <Link to="/app/team" className={topLink}>Teams</Link>
-        <Link to="/app/projects/new" className="ml-2 rounded-sm bg-jira px-3 py-1.5 text-sm font-medium text-white hover:bg-jira-dark ring-1 ring-white/30">Create</Link>
+        {projects.length > 0 && workspaceId
+          ? <button onClick={() => setCreating(true)} className="ml-2 rounded-sm bg-jira px-3 py-1.5 text-sm font-medium text-white hover:bg-jira-dark ring-1 ring-white/30">Create</button>
+          : <Link to="/app/projects/new" className="ml-2 rounded-sm bg-jira px-3 py-1.5 text-sm font-medium text-white hover:bg-jira-dark ring-1 ring-white/30">Create</Link>}
         <div className="flex-1" />
-        <input aria-label="Search" placeholder="Search" className="mr-2 w-56 rounded-sm bg-white/15 px-3 py-1.5 text-sm text-white placeholder:text-white/70 focus:bg-white focus:text-ink focus:placeholder:text-ink-soft" />
+        <GlobalSearch workspaceId={workspaceId} />
         <Link to="/app/notifications" aria-label="Notifications" className={topLink}>🔔</Link>
         <div className="relative">
           <button onClick={() => setMenu(menu === 'user' ? null : 'user')} aria-label="Account menu"><Avatar name={user.name} size={28} /></button>
@@ -77,6 +82,7 @@ function AppLayout() {
             </>
           )}
         </aside>
+        {workspaceId && <CreateIssueModal open={creating} onClose={() => setCreating(false)} workspaceId={workspaceId} projects={projects} defaultProjectId={projectId} />}
         <main className="min-w-0 flex-1 overflow-y-auto p-6"><Outlet /></main>
       </div>
     </div>

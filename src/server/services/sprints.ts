@@ -1,8 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { db } from '../db'
-import { sprints, issues, issueEvents, sprintSnapshots } from '../db/schema'
-import { eq, and, asc, desc, isNull, inArray, sql, or } from 'drizzle-orm'
+import { projects as projectsTable, sprints, issues, issueEvents, sprintSnapshots } from '../db/schema'
+import { eq, and, asc, desc, isNull, inArray, sql, or, ne } from 'drizzle-orm'
 import { requireSession } from '#/server/auth/guard'
 import { getMembership } from '#/server/permissions/index'
 import { ConflictError, NotFoundError, UnauthorizedError } from '#/lib/errors'
@@ -13,7 +13,7 @@ export const listSprints = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     const { userId } = await requireSession()
     if (!await getMembership(userId, data.workspaceId)) throw new UnauthorizedError()
-    const wheres = [eq(sprints.projectId, data.projectId)]
+    const wheres = [eq(sprints.projectId, data.projectId), eq(sprints.workspaceId, data.workspaceId)]
     if (data.state) wheres.push(eq(sprints.state, data.state))
     else wheres.push(or(eq(sprints.state, 'active'), eq(sprints.state, 'planned')) as any)
     return await db.select().from(sprints).where(and(...wheres)).orderBy(desc(sprints.createdAt))
@@ -34,6 +34,8 @@ export const createSprint = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const { userId } = await requireSession()
     if (!await getMembership(userId, data.workspaceId)) throw new UnauthorizedError()
+    const [proj] = await db.select({ id: projectsTable.id }).from(projectsTable).where(and(eq(projectsTable.id, data.projectId), eq(projectsTable.workspaceId, data.workspaceId))).limit(1)
+    if (!proj) throw new NotFoundError('Project not found.')
     // Check: at most one active/planned sprint per project
     const active = await db.select().from(sprints).where(and(eq(sprints.projectId, data.projectId), or(eq(sprints.state, 'active'), eq(sprints.state, 'planned'))))
     if (active.length >= 3) throw new ConflictError('Maximum 3 concurrent planned/sprint sprints allowed.')
@@ -101,19 +103,19 @@ export const completeSprint = createServerFn({ method: 'POST' })
     const existing = await db.select().from(sprints).where(and(eq(sprints.id, data.sprintId), eq(sprints.workspaceId, data.workspaceId))).limit(1)
     if (!existing[0]) throw new NotFoundError('Sprint not found.')
     if (existing[0].state !== 'active') throw new ConflictError('Only active sprints can be completed.')
+    // "Incomplete" = anything not done (the old code only counted status 'todo').
+    const incomplete = await db.select({ id: issues.id }).from(issues).where(and(eq(issues.sprintId, data.sprintId), ne(issues.status, 'done')))
     await db.transaction(async (tx) => {
-      // Capture final state
-      const incomplete = await db.select({ id: issues.id, number: issues.number, title: issues.title }).from(issues).where(and(eq(issues.sprintId, data.sprintId), eq(issues.status, 'todo')))
       for (const iss of incomplete) {
         await tx.insert(sprintSnapshotsTable).values({ sprintId: data.sprintId, issueId: iss.id, eventType: 'incomplete_snapshot', estimatePoints: 0 })
       }
       await tx.update(sprints).set({ state: 'completed', completedAt: new Date(), updatedAt: new Date() }).where(eq(sprints.id, data.sprintId))
-      if (data.moveIncompleteToBacklog) {
-        await tx.update(issues).set({ sprintId: null, updatedAt: new Date() }).where(and(eq(issues.sprintId, data.sprintId), inArray(issues.status, ['todo'])))
+      if (data.moveIncompleteToBacklog && incomplete.length) {
+        await tx.update(issues).set({ sprintId: null, updatedAt: new Date() }).where(and(eq(issues.sprintId, data.sprintId), ne(issues.status, 'done')))
       }
     })
     logger.info('sprint.completed', { userId, sprintId: data.sprintId })
-    return { ok: true, incompleteCount: 0 }
+    return { ok: true, incompleteCount: incomplete.length }
   })
 
 export const cancelSprint = createServerFn({ method: 'POST' })

@@ -246,3 +246,13 @@ export const sprintSnapshots = pgTable('sprint_snapshots', {
 }, (t) => ({
   sprintIdx: index('sprint_snapshots_sprint_id_idx').on(t.sprintId),
 }))
+
+// Fixed-window counters for the shared (multi-instance) rate limiter.
+export const rateLimits = pgTable('rate_limits', {
+  bucket: varchar('bucket', { length: 320 }).notNull(),
+  windowStart: timestamp('window_start', { withTimezone: true }).notNull(),
+  count: integer('count').notNull().default(0),
+}, (t) => ({
+  pk: uniqueIndex('rate_limits_bucket_window_idx').on(t.bucket, t.windowStart),
+  windowIdx: index('rate_limits_window_start_idx').on(t.windowStart),
+}))

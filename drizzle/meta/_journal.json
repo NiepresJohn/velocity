@@ -15,6 +15,13 @@
       "when": 1793486374100,
       "tag": "0001_nostalgic_purifiers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793487398153,
+      "tag": "0002_yellow_redwing",
+      "breakpoints": true
     }
   ]
 }

@@ -17,6 +17,7 @@ const envSchema = z.object({
   SMTP_PASSWORD: z.string().optional(),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60_000),
   RATE_LIMIT_MAX: z.coerce.number().default(20),
+  DB_POOL_MAX: z.coerce.number().int().min(1).default(10),
 })
 
 export const env = envSchema.parse(process.env)

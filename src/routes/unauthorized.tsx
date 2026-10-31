@@ -1,13 +1,12 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { StatusPage, btnPrimary, btnSecondary } from '#/components/auth-ui'
+
 export const Route = createFileRoute('/unauthorized')({ component: UnauthorizedPage })
 function UnauthorizedPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center space-y-4">
-        <h1 className="text-3xl font-bold">Unauthorized</h1>
-        <p className="text-gray-600">You do not have access to this resource.</p>
-        <a href="/app" className="text-indigo-600 underline">Go Home</a>
-      </div>
-    </div>
+    <StatusPage code="403" title="No access" text="You do not have permission to view this page. Ask a workspace admin for access, or sign in with a different account.">
+      <Link to="/app" className={btnPrimary}>Back to Velocity</Link>
+      <Link to="/login" className={btnSecondary}>Switch account</Link>
+    </StatusPage>
   )
 }

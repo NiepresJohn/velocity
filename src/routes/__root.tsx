@@ -1,5 +1,6 @@
 import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
+import { NotFoundPage } from './not-found'
 import styles from '../styles.css?url'
 
 export const Route = createRootRoute({
@@ -7,6 +8,7 @@ export const Route = createRootRoute({
     meta: [{ charSet: 'utf-8' }, { name: 'viewport', content: 'width=device-width, initial-scale=1' }, { title: 'Velocity' }],
     links: [{ rel: 'stylesheet', href: styles }],
   }),
+  notFoundComponent: NotFoundPage,
   component: () => <RootDocument><Outlet /></RootDocument>,
 })
 
