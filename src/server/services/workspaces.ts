@@ -5,7 +5,7 @@ import { workspaces, workspaceMembers, workspaceInvitations, projects } from '..
 import { eq, and, isNull } from 'drizzle-orm'
 import { requireSession } from '#/server/auth/guard'
 import { hashToken, randomBytesHex } from '#/server/auth/session'
-import { getMembership, getUserWorkspaces, requireWorkspaceRole } from '#/server/permissions/index'
+import { requireMembership, getUserWorkspaces, requireWorkspaceRole } from '#/server/permissions/index'
 import { ConflictError } from '#/lib/errors'
 import { slugify } from '#/lib/utils'
 import { emailAdapter } from '../email'
@@ -46,7 +46,7 @@ export const switchWorkspace = createServerFn({ method: 'POST' })
   .validator(z.object({ workspaceId: z.string().uuid() }))
   .handler(async ({ data }) => {
     const { userId } = await requireSession()
-    await getMembership(userId, data.workspaceId)
+    await requireMembership(userId, data.workspaceId)
     await (await import('@tanstack/react-start/server')).setCookie(WORKSPACE_COOKIE, data.workspaceId, cookieOpts())
     return { ok: true }
   })
@@ -81,3 +81,14 @@ export const getAppContext = createServerFn({ method: 'GET' }).handler(async () 
     .where(and(eq(projects.workspaceId, active.workspaceId), isNull(projects.archivedAt))).orderBy(projects.name)
   return { workspaceId: active.workspaceId, workspaceName: ws?.name ?? '', projects: rows }
 })
+
+export const listMembers = createServerFn({ method: 'GET' })
+  .validator(z.object({ workspaceId: z.string().uuid() }))
+  .handler(async ({ data }) => {
+    const { userId } = await requireSession()
+    await requireMembership(userId, data.workspaceId)
+    const { users } = await import('../db/schema')
+    return db.select({ id: users.id, name: users.name, email: users.email, role: workspaceMembers.role })
+      .from(workspaceMembers).innerJoin(users, eq(users.id, workspaceMembers.userId))
+      .where(eq(workspaceMembers.workspaceId, data.workspaceId)).orderBy(users.name)
+  })

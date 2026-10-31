@@ -106,3 +106,8 @@ pnpm dev                  # Start dev server
 Done: typecheck + build green; SSR shell via `__root.tsx`/`getRouter`; server-only code kept out of client bundle (`auth/guard.ts`, lazy cookie helpers); migration 0001 generated; `db:*` scripts and `db:seed` (demo@velocity.dev / demo-password-1, local DB only).
 Run locally: `VELOCITY_PG_PORT=5434 docker compose up -d postgres`, set DATABASE_URL to that port, `pnpm db:migrate && pnpm db:seed`. Build with NODE_ENV=production.
 Still open: board DnD UI, report charts, Vitest/Playwright tests, CI, Dockerfile, most pages are thin stubs.
+
+## Update 2026-11-01 (Jira UI pass)
+Done: Jira-style shell (top bar, project sidebar), projects list/create, board (drag, inline create), backlog (sprints, drag, start), issue detail, sprints list/detail/report with SVG burndown, dashboard, my work, notifications, team (list + invite). `/healthz`, Dockerfile, CI workflow, Vitest (utils only).
+Security fixes found while wiring: search ignored workspace (cross-tenant leak); label/comment/activity/project-dashboard/moveToSprint/listMembers had no membership check; edit/deleteComment unauthenticated. All now require membership; comment edits author-only.
+Still open: profile/preferences/workspace settings pages are stubs; avatars on cards show "?" (no member names in issue list); no DB-backed tests (server fns need request context); email adapter only logs; rate limiter is process-local; deploy needs domain + managed Postgres + SMTP from John (Phase 5 not executed, nothing pushed/deployed).

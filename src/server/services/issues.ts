@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { db } from '../db'
-import { issues, issueLabels, issueLabelLinks, projectSequences as seqTable, activityEvents, notifications, users as usersTable } from '../db/schema'
+import { projects as projectsTable, issues, issueLabels, issueLabelLinks, projectSequences as seqTable, activityEvents, notifications, users as usersTable } from '../db/schema'
 import { eq, and, or, asc, desc, like, inArray, isNull } from 'drizzle-orm'
 import { requireSession } from '#/server/auth/guard'
 import { getMembership } from '#/server/permissions/index'
@@ -162,12 +162,19 @@ export const transitionIssue = createServerFn({ method: 'POST' })
     return { ok: true }
   })
 
+// Labels carry only projectId; resolve the owning workspace and require membership.
+async function requireProjectAccess(projectId: string) {
+  const { userId } = await requireSession()
+  const [p] = await db.select({ workspaceId: projectsTable.workspaceId }).from(projectsTable).where(eq(projectsTable.id, projectId)).limit(1)
+  if (!p || !await getMembership(userId, p.workspaceId)) throw new NotFoundError('Project not found.')
+}
+
 // --- Labels ---
 
 export const listLabels = createServerFn({ method: 'GET' })
   .validator(z.object({ projectId: z.string().uuid() }))
   .handler(async ({ data }) => {
-    await requireSession()
+    await requireProjectAccess(data.projectId)
     const rows = await db.select().from(issueLabels).where(eq(issueLabels.projectId, data.projectId)).orderBy(asc(issueLabels.name))
     return rows
   })
@@ -175,7 +182,7 @@ export const listLabels = createServerFn({ method: 'GET' })
 export const createLabel = createServerFn({ method: 'POST' })
   .validator(z.object({ projectId: z.string().uuid(), name: z.string().min(1).max(50).trim(), color: z.string().regex(/^#[0-9a-fA-F]{6}$/).default('#6366f1') }))
   .handler(async ({ data }) => {
-    await requireSession()
+    await requireProjectAccess(data.projectId)
     const existing = await db.select().from(issueLabels).where(and(eq(issueLabels.projectId, data.projectId), eq(issueLabels.normalizedName, data.name.toLowerCase().replace(/\s+/g, '-'))))
     if (existing.length > 0) throw new ConflictError('Label already exists.')
     const [label] = await db.insert(issueLabels).values({ projectId: data.projectId, name: data.name, normalizedName: data.name.toLowerCase().replace(/\s+/g, '-'), color: data.color }).returning()
@@ -185,6 +192,9 @@ export const createLabel = createServerFn({ method: 'POST' })
 export const deleteLabel = createServerFn({ method: 'POST' })
   .validator(z.object({ labelId: z.string().uuid() }))
   .handler(async ({ data }) => {
+    const [l] = await db.select({ projectId: issueLabels.projectId }).from(issueLabels).where(eq(issueLabels.id, data.labelId)).limit(1)
+    if (!l) throw new NotFoundError('Label not found.')
+    await requireProjectAccess(l.projectId)
     await db.delete(issueLabels).where(eq(issueLabels.id, data.labelId))
     return { ok: true }
   })
@@ -192,6 +202,9 @@ export const deleteLabel = createServerFn({ method: 'POST' })
 export const addLabelToIssue = createServerFn({ method: 'POST' })
   .validator(z.object({ issueId: z.string().uuid(), labelId: z.string().uuid() }))
   .handler(async ({ data }) => {
+    const { projectId } = await requireIssueAccess(data.issueId)
+    const [lbl] = await db.select({ id: issueLabels.id }).from(issueLabels).where(and(eq(issueLabels.id, data.labelId), eq(issueLabels.projectId, projectId))).limit(1)
+    if (!lbl) throw new NotFoundError('Label not found.')
     const link = await db.select().from(issueLabelLinks).where(and(eq(issueLabelLinks.issueId, data.issueId), eq(issueLabelLinks.labelId, data.labelId))).limit(1)
     if (link.length > 0) return { ok: true }
     await db.insert(issueLabelLinks).values({ issueId: data.issueId, labelId: data.labelId })
@@ -201,18 +214,24 @@ export const addLabelToIssue = createServerFn({ method: 'POST' })
 export const removeLabelFromIssue = createServerFn({ method: 'POST' })
   .validator(z.object({ issueId: z.string().uuid(), labelId: z.string().uuid() }))
   .handler(async ({ data }) => {
+    await requireIssueAccess(data.issueId)
     await db.delete(issueLabelLinks).where(and(eq(issueLabelLinks.issueId, data.issueId), eq(issueLabelLinks.labelId, data.labelId)))
     return { ok: true }
   })
+
+async function requireIssueAccess(issueId: string) {
+  const { userId } = await requireSession()
+  const [row] = await db.select({ workspaceId: issues.workspaceId, projectId: issues.projectId }).from(issues).where(eq(issues.id, issueId)).limit(1)
+  if (!row || !await getMembership(userId, row.workspaceId)) throw new NotFoundError('Issue not found.')
+  return { userId, ...row }
+}
 
 // --- Comments ---
 
 export const addComment = createServerFn({ method: 'POST' })
   .validator(z.object({ issueId: z.string().uuid(), body: z.string().min(1).max(5000) }))
   .handler(async ({ data }) => {
-    const { userId } = await requireSession()
-    const issueRow = await db.select({ issue: issues, workspaceId: workspacesTable.id }).from(issues).innerJoin(workspacesTable as any, eq(issues.workspaceId, workspacesTable.id)).where(eq(issues.id, data.issueId)).limit(1)
-    if (!issueRow[0]) throw new NotFoundError('Issue not found.')
+    const { userId } = await requireIssueAccess(data.issueId)
     const [comment] = await db.insert(issueCommentsTable).values({ issueId: data.issueId, authorId: userId, body: data.body, createdAt: new Date(), updatedAt: new Date() }).returning()
     return comment
   })
@@ -240,6 +259,7 @@ export const deleteComment = createServerFn({ method: 'POST' })
 export const listComments = createServerFn({ method: 'GET' })
   .validator(z.object({ issueId: z.string().uuid(), page: z.number().int().min(1).default(1) }))
   .handler(async ({ data }) => {
+    await requireIssueAccess(data.issueId)
     const rows = await db.select({ comment: issueCommentsTable, author: usersTable }).from(issueCommentsTable)
       .leftJoin(usersTable, eq(usersTable.id, issueCommentsTable.authorId))
       .where(and(eq(issueCommentsTable.issueId, data.issueId), isNull(issueCommentsTable.deletedAt)))
