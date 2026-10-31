@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { db } from '../db'
 import { workspaces, workspaceMembers, workspaceInvitations } from '../db/schema'
 import { eq, and, isNull } from 'drizzle-orm'
-import { requireSession } from '#/server/auth/functions'
+import { requireSession } from '#/server/auth/guard'
 import { hashToken, randomBytesHex } from '#/server/auth/session'
 import { getMembership, getUserWorkspaces, requireWorkspaceRole } from '#/server/permissions/index'
 import { ConflictError } from '#/lib/errors'
@@ -47,7 +47,7 @@ export const switchWorkspace = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const { userId } = await requireSession()
     await getMembership(userId, data.workspaceId)
-    setCookie(WORKSPACE_COOKIE, data.workspaceId, cookieOpts())
+    await (await import('@tanstack/react-start/server')).setCookie(WORKSPACE_COOKIE, data.workspaceId, cookieOpts())
     return { ok: true }
   })
 

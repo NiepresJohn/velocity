@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { db } from '../db'
 import { issues, sprints, sprintSnapshots as snapshotsTable } from '../db/schema'
 import { eq, and, asc, desc, count } from 'drizzle-orm'
-import { requireSession } from '#/server/auth/functions'
+import { requireSession } from '#/server/auth/guard'
 import { getMembership } from '#/server/permissions/index'
 import { NotFoundError, UnauthorizedError } from '#/lib/errors'
 

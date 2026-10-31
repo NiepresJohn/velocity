@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { db } from '../db'
 import { issues as issuesTable, sprints as sprintsTable, projects as projectsTable } from '../db/schema'
 import { like, or, eq } from 'drizzle-orm'
-import { requireSession } from '#/server/auth/functions'
+import { requireSession } from '#/server/auth/guard'
 
 export const search = createServerFn({ method: 'GET' })
   .validator(z.object({ q: z.string().min(2).max(100), workspaceId: z.string().uuid() }))

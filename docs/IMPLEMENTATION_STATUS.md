@@ -1,8 +1,8 @@
 # Velocity — Implementation Checkpoint
 
-**Date:** 2026-10-28  
+**Date:** 2026-11-01  
 **Branch:** main | **Commits:** ~30+  
-**Status:** Core scaffolding + services written | Typecheck not yet clean (11 errors remaining)
+**Status:** Core scaffolding + services written | Typecheck clean, `vite build` passes, login → dashboard verified in browser
 
 ---
 
@@ -99,3 +99,10 @@ pnpm dev                  # Start dev server
 8. **Sprint snapshots** for immutable report history
 9. **No shadcn/ui** — direct Tailwind CSS classes for speed (P0 priority)
 10. **Native HTML drag-and-drop** planned for kanban board (no dnd-kit dependency needed)
+
+---
+
+## Update 2026-11-01
+Done: typecheck + build green; SSR shell via `__root.tsx`/`getRouter`; server-only code kept out of client bundle (`auth/guard.ts`, lazy cookie helpers); migration 0001 generated; `db:*` scripts and `db:seed` (demo@velocity.dev / demo-password-1, local DB only).
+Run locally: `VELOCITY_PG_PORT=5434 docker compose up -d postgres`, set DATABASE_URL to that port, `pnpm db:migrate && pnpm db:seed`. Build with NODE_ENV=production.
+Still open: board DnD UI, report charts, Vitest/Playwright tests, CI, Dockerfile, most pages are thin stubs.

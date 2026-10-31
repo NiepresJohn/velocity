@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { db } from '../db'
 import { activityEvents } from '../db/schema'
 import { eq, and, desc, asc } from 'drizzle-orm'
-import { requireSession } from '#/server/auth/functions'
+import { requireSession } from '#/server/auth/guard'
 
 export const getActivityFeed = createServerFn({ method: 'GET' })
   .validator(z.object({ workspaceId: z.string().uuid(), projectId: z.string().uuid().optional() }))

@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { db } from '../db'
 import { issues, sprints, projects } from '../db/schema'
 import { eq, count, and } from 'drizzle-orm'
-import { requireSession } from '#/server/auth/functions'
+import { requireSession } from '#/server/auth/guard'
 import { NotFoundError } from '#/lib/errors'
 
 export const getWorkspaceDashboard = createServerFn({ method: 'GET' })

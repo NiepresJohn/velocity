@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { db } from '../db'
 import { notifications } from '../db/schema'
 import { eq, and, desc, isNull } from 'drizzle-orm'
-import { requireSession } from '#/server/auth/functions'
+import { requireSession } from '#/server/auth/guard'
 
 export const listNotifications = createServerFn({ method: 'GET' })
   .validator(z.object({ workspaceId: z.string().uuid(), unreadOnly: z.boolean().default(false), page: z.number().int().min(1).default(1) }))

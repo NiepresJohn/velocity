@@ -8,20 +8,27 @@
     "build": "vite build",
     "preview": "vite preview",
     "generate": "tsr generate",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx src/server/db/seed.ts"
   },
   "dependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@tanstack/devtools-vite": "0.8.5",
     "@tanstack/react-query": "^5.62.0",
     "@tanstack/react-router": "^1.95.1",
     "@tanstack/react-start": "^1.95.1",
     "@tanstack/react-table": "^8.20.5",
     "@tanstack/react-virtual": "^3.10.8",
     "@types/pg": "^8.23.1",
+    "@vitejs/plugin-react": "6.1.2",
     "argon2": "^0.45.1",
     "cookie": "^2.0.1",
     "dotenv": "^18.0.9",
     "drizzle-orm": "^0.45.4",
     "jsonwebtoken": "^9.0.3",
+    "nitro": "3.0.260610-beta",
     "pg": "^8.23.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -40,7 +47,7 @@
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.15",
     "typescript": "^5.7.2",
-    "vite": "^6.0.3",
+    "vite": "^8.3.5",
     "vite-tsconfig-paths": "^6.1.1"
   }
 }
