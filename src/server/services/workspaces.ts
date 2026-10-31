@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { db } from '../db'
-import { workspaces, workspaceMembers, workspaceInvitations } from '../db/schema'
+import { workspaces, workspaceMembers, workspaceInvitations, projects } from '../db/schema'
 import { eq, and, isNull } from 'drizzle-orm'
 import { requireSession } from '#/server/auth/guard'
 import { hashToken, randomBytesHex } from '#/server/auth/session'
@@ -67,3 +67,17 @@ export const inviteMember = createServerFn({ method: 'POST' })
 
 import { WORKSPACE_COOKIE } from '#/server/auth/session'
 function cookieOpts() { return { httpOnly: true, path: '/', sameSite: 'lax' as const, secure: env.NODE_ENV === 'production', maxAge: 60*60*24*7 } }
+
+// Active workspace (cookie, falling back to first membership) + its projects, for the app shell.
+export const getAppContext = createServerFn({ method: 'GET' }).handler(async () => {
+  const { userId } = await requireSession()
+  const { getCookie } = await import('@tanstack/react-start/server')
+  const memberships = await getUserWorkspaces(userId)
+  const wanted = getCookie(WORKSPACE_COOKIE)
+  const active = memberships.find((m) => m.workspaceId === wanted) ?? memberships[0]
+  if (!active) return { workspaceId: null, workspaceName: null, projects: [] as { id: string; name: string; key: string }[] }
+  const [ws] = await db.select({ name: workspaces.name }).from(workspaces).where(eq(workspaces.id, active.workspaceId))
+  const rows = await db.select({ id: projects.id, name: projects.name, key: projects.key }).from(projects)
+    .where(and(eq(projects.workspaceId, active.workspaceId), isNull(projects.archivedAt))).orderBy(projects.name)
+  return { workspaceId: active.workspaceId, workspaceName: ws?.name ?? '', projects: rows }
+})

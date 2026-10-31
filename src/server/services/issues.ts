@@ -45,8 +45,9 @@ export const listIssues = createServerFn({ method: 'GET' })
       rank: issues.rank, priority: issues.priority, created_at: issues.createdAt, updated_at: issues.updatedAt, due_date: issues.dueDate, estimate_points: issues.estimatePoints,
     }
     const orderFn = data.sortOrder === 'asc' ? asc : desc
-    const queryBuilder = db.select({ issue: issues, labels: issueLabels, labelLink: issueLabelLinks })
+    const queryBuilder = db.select({ issue: issues, labels: issueLabels })
       .from(issues)
+      .leftJoin(issueLabelLinks, eq(issueLabelLinks.issueId, issues.id))
       .leftJoin(issueLabels, eq(issueLabels.id, issueLabelLinks.labelId))
       .where(and(...wheres))
       .orderBy(orderFn(fieldMap[data.sortField] || issues.rank))
@@ -79,11 +80,12 @@ export const getIssue = createServerFn({ method: 'GET' })
   })
 
 export const createIssue = createServerFn({ method: 'POST' })
-  .validator(z.object({ projectId: z.string().uuid(), workspaceId: z.string().uuid(), title: z.string().min(3).max(200).trim(), description: z.string().max(10000).optional().default(''), type: z.enum(['story', 'task', 'bug', 'epic']).default('task'), priority: z.enum(['lowest', 'low', 'medium', 'high', 'highest']).default('medium'), status: z.string().default('todo'), assigneeId: z.string().uuid().optional(), estimatePoints: z.number().int().min(0).optional(), dueDate: z.string().date().or(z.date()).optional() }))
+  .validator(z.object({ projectId: z.string().uuid(), workspaceId: z.string().uuid(), title: z.string().min(3).max(200).trim(), description: z.string().max(10000).optional().default(''), type: z.enum(['story', 'task', 'bug', 'epic']).default('task'), priority: z.enum(['lowest', 'low', 'medium', 'high', 'highest']).default('medium'), status: z.string().default('todo'), assigneeId: z.string().uuid().optional(), sprintId: z.string().uuid().optional(), estimatePoints: z.number().int().min(0).optional(), dueDate: z.string().date().or(z.date()).optional() }))
   .handler(async ({ data }) => {
     const { userId } = await requireSession()
     if (!await getMembership(userId, data.workspaceId)) throw new UnauthorizedError()
     let issueNumber = 1
+    let issueId = ''
     await db.transaction(async (tx) => {
       const seq = await tx.select().from(seqTable).where(eq(seqTable.projectId, data.projectId)).for('update').limit(1)
       if (!seq[0]) await tx.insert(seqTable).values({ projectId: data.projectId, nextIssueNumber: 1 })
@@ -94,9 +96,10 @@ export const createIssue = createServerFn({ method: 'POST' })
       const [issue] = await tx.insert(issues).values({
         projectId: data.projectId, workspaceId: data.workspaceId, number: issueNumber, title: data.title,
         description: data.description, type: data.type, priority: data.priority, status: data.status,
-        assigneeId: data.assigneeId ?? null, estimatePoints: data.estimatePoints ?? null,
+        assigneeId: data.assigneeId ?? null, sprintId: data.sprintId ?? null, estimatePoints: data.estimatePoints ?? null,
         dueDate: typeof data.dueDate === 'string' ? data.dueDate : (data.dueDate instanceof Date ? data.dueDate.toISOString().slice(0, 10) : null), rank: 0, createdAt: now, updatedAt: now, reporterId: userId,
       }).returning()
+      issueId = issue.id
       // Insert activity event
       await tx.insert(activityEvents).values({ workspaceId: data.workspaceId, projectId: data.projectId, actorId: userId, entityType: 'issue', entityId: issue.id, eventType: 'created', metadata: { title: data.title } })
       // Notify assignee
@@ -105,7 +108,7 @@ export const createIssue = createServerFn({ method: 'POST' })
       }
     })
     logger.info('issue.created', { userId, issueNumber, projectId: data.projectId })
-    return { id: '', issueNumber }
+    return { id: issueId, issueNumber }
   })
 
 export const updateIssue = createServerFn({ method: 'POST' })
@@ -247,10 +250,12 @@ import { issueComments as issueCommentsTable } from '../db/schema'
 export const moveToSprint = createServerFn({ method: 'POST' })
   .validator(z.object({ issueId: z.string().uuid(), sprintId: z.string().uuid().nullable() }))
   .handler(async ({ data }) => {
-    await requireSession()
+    const { userId } = await requireSession()
+    const [issueRow] = await db.select().from(issues).where(eq(issues.id, data.issueId)).limit(1)
+    if (!issueRow) throw new NotFoundError('Issue not found.')
+    if (!await getMembership(userId, issueRow.workspaceId)) throw new UnauthorizedError()
     if (data.sprintId) {
-      // verify sprint exists and user has access
-      const sprintRow = await db.select().from(sprintsTable).where(eq(sprintsTable.id, data.sprintId)).limit(1)
+      const sprintRow = await db.select().from(sprintsTable).where(and(eq(sprintsTable.id, data.sprintId), eq(sprintsTable.projectId, issueRow.projectId))).limit(1)
       if (!sprintRow[0]) throw new NotFoundError('Sprint not found.')
     }
     await db.update(issues).set({ sprintId: data.sprintId, updatedAt: new Date() }).where(eq(issues.id, data.issueId))

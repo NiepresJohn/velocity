@@ -1,32 +1,85 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
-import { transitionIssue } from '#/server/services/issues'
+import { createIssue, listIssues, transitionIssue } from '#/server/services/issues'
+import { listSprints } from '#/server/services/sprints'
+import { IssueCard, type IssueRow } from '#/components/IssueCard'
 
-export const Route = createFileRoute('/app/projects/$projectId/board')({ component: BoardPage })
+export const Route = createFileRoute('/app/projects/$projectId/board')({
+  loader: async ({ context, params }) => {
+    const workspaceId = context.workspaceId!
+    const [res, sprints] = await Promise.all([
+      listIssues({ data: { projectId: params.projectId, workspaceId, pageSize: 100 } }),
+      listSprints({ data: { projectId: params.projectId, workspaceId, state: 'active' } }),
+    ])
+    return { issues: res.issues as IssueRow[], sprint: sprints[0] ?? null }
+  },
+  component: BoardPage,
+})
 
 const COLUMNS = [
-  { key: 'todo', label: 'To Do', color: 'border-blue-400 bg-blue-50/50' },
-  { key: 'in_progress', label: 'In Progress', color: 'border-yellow-400 bg-yellow-50/50' },
-  { key: 'in_review', label: 'In Review', color: 'border-purple-400 bg-purple-50/50' },
-  { key: 'done', label: 'Done', color: 'border-green-400 bg-green-50/50' },
+  { key: 'todo', label: 'To Do' },
+  { key: 'in_progress', label: 'In Progress' },
+  { key: 'in_review', label: 'In Review' },
+  { key: 'done', label: 'Done' },
 ]
 
 function BoardPage() {
-  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const { issues, sprint } = Route.useLoaderData()
+  const { workspaceId, projects } = Route.useRouteContext()
+  const { projectId } = Route.useParams()
+  const router = useRouter()
+  const key = projects.find((p) => p.id === projectId)?.key ?? ''
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [over, setOver] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [title, setTitle] = useState('')
+  const [error, setError] = useState('')
+  // Board shows the active sprint when there is one, otherwise everything.
+  const visible = sprint ? issues.filter((i) => i.sprintId === sprint.id) : issues
+
+  async function move(id: string, status: string) {
+    if (!workspaceId) return
+    await transitionIssue({ data: { issueId: id, workspaceId, status } })
+    await router.invalidate()
+  }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Kanban Board</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {COLUMNS.map(col => (
-          <div key={col.key} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); if (draggingId) { transitionIssue({ data: { issueId: draggingId, workspaceId: '', status: col.key } }).catch(() => {}); setDraggingId(null) } }}
-            className={`min-h-[400px] rounded-lg border-2 ${col.color} p-3 space-y-2`}>
-            <h2 className="font-semibold text-sm">{col.label}</h2>
-            <button className="w-full px-3 py-2 text-xs text-gray-500 bg-white/50 rounded hover:bg-white/80">+ Add card</button>
-          </div>
-        ))}
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-2xl font-medium">{sprint ? sprint.name : 'Board'}</h1>
+        {sprint?.goal && <p className="text-sm text-ink-soft">{sprint.goal}</p>}
       </div>
-      <p className="text-center text-sm text-gray-500">Create issues and drag them between columns to change status.</p>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {COLUMNS.map((col) => {
+          const items = visible.filter((i) => i.status === col.key)
+          return (
+            <section key={col.key} aria-label={col.label}
+              onDragOver={(e) => { e.preventDefault(); setOver(col.key) }}
+              onDragLeave={() => setOver(null)}
+              onDrop={(e) => { e.preventDefault(); setOver(null); if (dragId) void move(dragId, col.key); setDragId(null) }}
+              className={`min-h-[320px] rounded-sm p-2 ${over === col.key ? 'bg-[#deebff]' : 'bg-surface'}`}>
+              <h2 className="mb-2 px-1 text-xs font-bold uppercase text-ink-soft">{col.label} <span className="font-normal">{items.length}</span></h2>
+              <div className="space-y-2">
+                {items.map((i) => <IssueCard key={i.id} issue={i} projectKey={key} projectId={projectId} draggable onDragStart={() => setDragId(i.id)} />)}
+              </div>
+              {col.key === 'todo' && (adding ? (
+                <form className="mt-2" onSubmit={async (e) => {
+                  e.preventDefault()
+                  if (!workspaceId) return
+                  try {
+                    await createIssue({ data: { projectId, workspaceId, title, sprintId: sprint?.id } })
+                    setTitle(''); setAdding(false); setError('')
+                    await router.invalidate()
+                  } catch (err) { setError(err instanceof Error ? err.message : 'Could not create issue') }
+                }}>
+                  <input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What needs to be done?" minLength={3} maxLength={200} required className="w-full rounded-sm border-2 border-jira bg-white px-2 py-1.5 text-sm" />
+                  {error && <p role="alert" className="mt-1 text-xs text-[#bf2600]">{error}</p>}
+                </form>
+              ) : <button onClick={() => setAdding(true)} className="mt-2 w-full rounded-sm px-2 py-1.5 text-left text-sm text-ink-soft hover:bg-black/5">+ Create issue</button>)}
+            </section>
+          )
+        })}
+      </div>
     </div>
   )
 }
