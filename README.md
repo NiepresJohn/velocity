@@ -153,3 +153,7 @@ Before exposing an instance publicly you need a domain, a PostgreSQL database an
 - [Product requirements](docs/PRD.md)
 - [Implementation status](docs/IMPLEMENTATION_STATUS.md)
 - [Deployment guide](docs/DEPLOYMENT.md)
+
+## License
+
+MIT, see [LICENSE](LICENSE).
