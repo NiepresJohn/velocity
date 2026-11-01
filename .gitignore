@@ -7,3 +7,6 @@ dist
 .env.production
 *.log
 .playwright-mcp
+.env.*
+!.env.example
+!.env.production.example
